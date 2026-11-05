@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pomodoro Clocker</title>
+<meta name="description" content="Командный Pomodoro-таймер с комнатами фокуса">
+<meta name="theme-color" content="#12161d">
+<meta property="og:title" content="Pomodoro Clocker — таймер фокуса для команды">
+<meta property="og:description" content="Работайте циклами 25/5/15 вместе: создайте комнату, отправьте ссылку и видьте, кто в фокусе.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E🍅%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark light;--bg:#12161d;--sf:#1a2029;--ln:#283140;--tx:#ecebe6;--mu:#8b95a5;--cw:#f2a93b;--cs:#6fcf97;--cl:#a78bfa;--ac:var(--cw);--on:#1a1206;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root[data-phase=short]{--ac:var(--cs);--on:#06180d}
+:root[data-phase=long]{--ac:var(--cl);--on:#120a2a}
+@media (prefers-color-scheme:light){
+  :root:not([data-theme=dark]){--bg:#f3efe6;--sf:#fbf9f4;--ln:#ddd6c6;--tx:#26231d;--mu:#6d675a;--cw:#c97a0a;--cs:#2e9e63;--cl:#7c5ce0;--on:#fff}
+}
+:root[data-theme=dark]{--bg:#12161d;--sf:#1a2029;--ln:#283140;--tx:#ecebe6;--mu:#8b95a5;--cw:#f2a93b;--cs:#6fcf97;--cl:#a78bfa}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{min-height:100%}
+body{font-family:'Public Sans',system-ui,-apple-system,sans-serif;color:var(--tx);background:radial-gradient(800px 420px at 50% -8%,color-mix(in srgb,var(--ac) 16%,transparent),transparent),var(--bg);transition:background .6s;padding:16px 16px 28px}
+.top{max-width:860px;margin:0 auto 14px;display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600}
+.mu{color:var(--mu)}.small{font-size:12px;line-height:1.4}
+.layout{max-width:860px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:760px){.layout{grid-template-columns:minmax(0,1fr);max-width:460px}.top{max-width:460px}}
+.col{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--sf);border:1px solid var(--ln);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.timer{align-items:center}
+.row{display:flex;gap:8px;align-items:center;width:100%}.between{justify-content:space-between}
+h2{font-size:12px;letter-spacing:.08em;color:var(--mu);font-weight:600;text-transform:uppercase}
+.phase{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--ac);transition:color .5s}
+.ring{position:relative;width:min(250px,40vh,100%);min-width:190px;aspect-ratio:1}
+svg{width:100%;height:100%;transform:rotate(-90deg)}
+circle{fill:none;stroke-width:9}.bgc{stroke:var(--ln)}
+.fgc{stroke:var(--ac);stroke-linecap:round;stroke-dasharray:678.58;transition:stroke-dashoffset .3s linear,stroke .5s}
+.time{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:600 46px 'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.curtask{font-size:13px;color:var(--mu);text-align:center;min-height:18px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{display:flex;gap:8px}.dot{width:8px;height:8px;border-radius:50%;background:var(--ln);transition:background .3s}.dot.f{background:var(--ac)}
+button{font:600 14px 'Public Sans',sans-serif;color:var(--tx);background:transparent;border:1px solid var(--ln);border-radius:10px;padding:11px 14px;cursor:pointer;transition:border-color .2s,transform .1s}
+button:hover{border-color:var(--ac)}button:active{transform:scale(.97)}button:focus-visible,input:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.pri{background:var(--ac);color:var(--on);border-color:var(--ac)}.wide{width:100%}
+.controls{display:flex;gap:10px;width:100%}.controls button{flex:1}
+.ico{border:none;padding:4px 8px;color:var(--mu);font-size:17px}
+.link{border:none;color:var(--mu);font-size:12px;text-decoration:underline;padding:4px}
+input[type=text],input[type=number]{font:500 14px 'Public Sans',sans-serif;color:var(--tx);background:transparent;border:1px solid var(--ln);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+input:focus{border-color:var(--ac)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);width:100%;border-top:1px solid var(--ln);padding-top:12px;text-align:center}
+.stats b{display:block;font:600 18px 'IBM Plex Mono',monospace}.stats span{font-size:11px;color:var(--mu)}
+.tag{font:600 12px 'IBM Plex Mono',monospace;color:var(--ac);border:1px solid var(--ac);border-radius:8px;padding:3px 8px}
+.sum{display:flex;gap:14px;font-size:12px;color:var(--mu);flex-wrap:wrap}.sum b{color:var(--tx)}
+.mem{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-top:1px solid var(--ln)}
+.av{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;color:#fff}
+.mem>div{min-width:0}.mn{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mn i{font-style:normal;color:var(--mu);font-weight:400}
+.ms{font-size:12px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{font:600 12px 'IBM Plex Mono',monospace;padding:4px 9px;border-radius:999px;border:1px solid var(--ln);white-space:nowrap}
+.chip.work{color:var(--cw);border-color:var(--cw)}.chip.short{color:var(--cs);border-color:var(--cs)}.chip.long{color:var(--cl);border-color:var(--cl)}.chip.paused,.chip.idle{color:var(--mu)}
+.task{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid var(--ln);border-radius:10px;font-size:14px;cursor:pointer}
+.task.on{border-color:var(--ac)}.task.done .tt{text-decoration:line-through;color:var(--mu)}.tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task button{border:none;padding:0 6px;color:var(--mu);font-size:16px}
+#taskList{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow-y:auto}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:20px;z-index:50}.ov.open{display:flex}
+.modal{width:100%;max-width:330px;background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.srow{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}.srow input{width:70px;text-align:right}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.nav{display:flex;align-items:center;gap:14px}.nav a{color:var(--mu);font-size:13px;text-decoration:none;font-weight:500}.nav a:hover{color:var(--ac)}
+.info{max-width:860px;margin:26px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.info h3{font-size:15px;margin:4px 0 6px}.info p{font-size:13px;color:var(--mu);line-height:1.55}.step{font:600 12px 'IBM Plex Mono',monospace;color:var(--ac)}
+.ad{max-width:860px;margin:16px auto 0;min-height:90px;border:1px dashed var(--ln);border-radius:12px;display:grid;place-items:center;font-size:11px;color:var(--mu)}
+footer{max-width:860px;margin:26px auto 0;padding-top:16px;border-top:1px solid var(--ln);font-size:12px;color:var(--mu);line-height:1.6}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;max-width:90vw;text-align:center}.toast.on{opacity:1}
+@media (max-width:760px){.info{grid-template-columns:1fr;max-width:460px}.ad,footer{max-width:460px}.top .nav a{display:none}}
+</style>
+</head>
+<body>
+<header class="top"><span>🍅 Pomodoro Clocker</span><nav class="nav"><span class="mu small" id="conn"></span><a href="#how">Как это работает</a><a href="#about">О проекте</a></nav></header>
+<main class="layout">
+  <section class="card timer">
+    <div class="row between"><div class="phase"><span id="phase">ФОКУС</span> <span id="lock" hidden>🔒</span></div><button class="ico" id="gear" aria-label="Настройки">⚙</button></div>
+    <div class="ring"><svg viewBox="0 0 240 240"><circle class="bgc" cx="120" cy="120" r="108"/><circle class="fgc" id="fg" cx="120" cy="120" r="108"/></svg><div class="time" id="time">25:00</div></div>
+    <div class="curtask" id="curtask"></div>
+    <div class="dots" id="dots"></div>
+    <div class="controls"><button id="reset">Сброс</button><button id="go" class="pri">Старт</button><button id="skip">Дальше</button></div>
+    <div class="stats"><div><b id="stFocus">0</b><span>мин фокуса</span></div><div><b id="stDone">0</b><span>циклов</span></div><div><b id="stPen">0</b><span>штрафов</span></div></div>
+    <div class="mu small">Пробел — старт / пауза</div>
+  </section>
+  <div class="col">
+    <section class="card" id="roomCard">
+      <div class="row between"><h2>Командная комната</h2><span class="tag" id="codeTag" hidden></span></div>
+      <p class="mu small" id="roomNote" hidden>Комнаты недоступны: не подключён сервер синхронизации (см. js/config.js). Работает одиночный режим.</p>
+      <div id="roomJoin" style="display:flex;flex-direction:column;gap:10px">
+        <input type="text" id="nick" maxlength="20" placeholder="Ваше имя">
+        <div class="row"><input type="text" id="code" maxlength="12" placeholder="Код комнаты"><button id="joinBtn">Войти</button></div>
+        <button id="createBtn" class="pri wide">Создать комнату</button>
+        <button id="demoBtn" class="link">Показать демо-участников</button>
+      </div>
+      <div id="roomView" hidden style="display:flex;flex-direction:column;gap:6px">
+        <div class="sum" id="roomSum"></div>
+        <div id="members"></div>
+        <div class="row between"><span class="mu small" id="roomHint">Передайте ссылку или код коллегам</span><div class="row" style="width:auto"><button id="copyLink">Ссылка</button><button id="leave">Выйти</button></div></div>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Задачи</h2>
+      <div class="row"><input type="text" id="taskIn" maxlength="60" placeholder="Новая задача"><button id="taskAdd" aria-label="Добавить">+</button></div>
+      <div id="taskList"></div>
+    </section>
+  </div>
+</main>
+
+<div class="ov" id="setOv"><div class="modal">
+  <div class="row between"><h2>Настройки</h2><button class="ico" id="setClose" aria-label="Закрыть">✕</button></div>
+  <div class="srow"><span>Работа, мин</span><input type="number" id="sWork" min="1" max="90"></div>
+  <div class="srow"><span>Короткий отдых, мин</span><input type="number" id="sShort" min="1" max="60"></div>
+  <div class="srow"><span>Длинный отдых, мин</span><input type="number" id="sLong" min="1" max="90"></div>
+  <div class="srow"><span>Циклов до длинного</span><input type="number" id="sCycles" min="1" max="12"></div>
+  <div class="srow"><span>Грейс паузы, сек (0 — выкл.)</span><input type="number" id="sGrace" min="0" max="300"></div>
+  <button class="pri" id="sSave">Сохранить</button>
+</div></div>
+<div class="ov" id="askOv"><div class="modal">
+  <p id="askMsg" style="font-size:14px;line-height:1.5"></p>
+  <div class="row"><button id="askNo" style="flex:1">Отмена</button><button id="askYes" class="pri" style="flex:1">ОК</button></div>
+</div></div>
+
+<aside class="ad" id="adSlot" hidden aria-label="Реклама">Место для рекламы</aside>
+<section class="info" id="how"><div><span class="step">01</span><h3>Создайте комнату</h3><p>Введите имя и нажмите «Создать комнату» — появится короткий код.</p></div><div><span class="step">02</span><h3>Отправьте ссылку</h3><p>Кнопка «Ссылка» копирует приглашение. Коллега открывает её и сразу попадает в вашу комнату.</p></div><div><span class="step">03</span><h3>Работайте вместе</h3><p>Все видят, кто в фокусе, кто на отдыхе, сколько циклов сделано и сколько штрафов за паузы.</p></div></section>
+<footer id="about"><b>Pomodoro Clocker</b> — учебный командный проект. Мы не собираем персональные данные: настройки, задачи и статистика хранятся только в вашем браузере. В комнате другие участники видят ваше имя, статус таймера, число циклов и текущую задачу — не пишите в них ничего личного. Код комнаты знает каждый, кому вы его передали. Комнаты работают через публичный сервер сообщений, его доступность не гарантируется.</footer>
+<div class="toast" id="toast" role="status"></div>
+<script>
+/* Настройки сервера комнат (Supabase). Пока поля пустые — сайт работает в одиночном режиме.
+   Где взять значения: Supabase → Project Settings → API → "Project URL" и "anon / publishable key".
+   Это ПУБЛИЧНЫЙ ключ, его можно хранить в репозитории. НИКОГДА не вставляйте сюда service_role ключ. */
+window.PC_CONFIG = {
+  /* Комнаты работают сразу, без настройки (публичный MQTT-брокер). Свои брокеры (wss://...): */
+  mqttBrokers: [],
+  /* Реклама: поставьте true и вставьте код рекламной сети внутрь <aside id="adSlot"> в index.html.
+     Перед настоящей рекламой нужны политика конфиденциальности и уведомление о cookie. */
+  adsEnabled: false,
+  supabaseUrl: '',   // например: 'https://abcdxyz.supabase.co'
+  supabaseKey: ''    // например: 'eyJhbGciOi...' (anon / publishable key)
+};
+
+</script>
+<script>
+/* Комнаты без аккаунтов и ключей: публичный MQTT-брокер через WebSocket (wss).
+   Минимальный клиент MQTT 3.1.1 (QoS 0). Каждый участник публикует своё состояние в топик
+   pomoclocker-v1/<код>/<id> с флагом retain; при закрытии вкладки состояние стирается
+   (явно или через «завещание» брокера). Интерфейс тот же: join(name) -> {presence, peers, onPeers, leave}. */
+(function () {
+  const enc = new TextEncoder(), dec = new TextDecoder();
+  const DEFAULT_BROKERS = ['wss://broker.emqx.io:8084/mqtt', 'wss://broker.hivemq.com:8884/mqtt'];
+  const STALE_MS = 120000, HEARTBEAT_MS = 30000;
+  const connH = [];
+  const str = s => { const b = enc.encode(s); return [b.length >> 8, b.length & 255, ...b]; };
+  const rlen = n => { const o = []; do { let d = n % 128; n = Math.floor(n / 128); if (n > 0) d |= 128; o.push(d); } while (n > 0); return o; };
+  const pkt = (h, body) => new Uint8Array([h, ...rlen(body.length), ...body]);
+  const publish = (topic, text, retain) => pkt(0x30 | (retain ? 1 : 0), [...str(topic), ...enc.encode(text)]);
+  const concat = (a, b) => { const r = new Uint8Array(a.length + b.length); r.set(a); r.set(b, a.length); return r; };
+  function parse(buf) {
+    if (buf.length < 2) return null;
+    let len = 0, mul = 1, i = 1, d;
+    do { if (i >= buf.length) return null; d = buf[i++]; len += (d & 127) * mul; mul *= 128; } while (d & 128);
+    if (buf.length < i + len) return null;
+    return { type: buf[0] >> 4, flags: buf[0] & 15, body: buf.slice(i, i + len), total: i + len };
+  }
+  const available = () => typeof WebSocket !== 'undefined';
+
+  async function join(name) {
+    const brokers = ((window.PC_CONFIG || {}).mqttBrokers || []).length ? PC_CONFIG.mqttBrokers : DEFAULT_BROKERS;
+    const id = Array.from(crypto.getRandomValues(new Uint8Array(6)), b => b.toString(16).padStart(2, '0')).join('');
+    const base = 'pomoclocker-v1/' + String(name).replace(/[^a-z0-9_-]/gi, '') + '/';
+    let ws = null, mine = {}, map = new Map(), handlers = [], closed = false, timers = [];
+    const emit = () => handlers.forEach(h => h());
+    const send = u8 => { if (ws && ws.readyState === 1) ws.send(u8); };
+    const publishMine = () => send(publish(base + id, JSON.stringify({ ...mine, t: Date.now() }), true));
+    const clearMine = () => send(publish(base + id, '', true));
+
+    function onPublish(p) {
+      const tl = (p.body[0] << 8) | p.body[1];
+      const topic = dec.decode(p.body.slice(2, 2 + tl));
+      let off = 2 + tl; if ((p.flags >> 1) & 3) off += 2;
+      const payload = dec.decode(p.body.slice(off));
+      if (!topic.startsWith(base)) return;
+      const k = topic.slice(base.length);
+      if (!k || k.includes('/')) return;
+      if (!payload) map.delete(k);
+      else { try { map.set(k, JSON.parse(payload)); } catch (e) {} }
+      emit();
+    }
+    function tryOpen(url) {
+      return new Promise((resolve, reject) => {
+        let done = false, buf = new Uint8Array(0);
+        const s = new WebSocket(url, 'mqtt'); s.binaryType = 'arraybuffer';
+        const fail = e => { if (!done) { done = true; clearTimeout(to); try { s.close(); } catch (x) {} reject(e); } };
+        const to = setTimeout(() => fail(new Error('timeout')), 7000);
+        s.onopen = () => {
+          const will = [...str(base + id), 0, 0];                       // завещание: пустое retained-сообщение = «участник ушёл»
+          const body = [...str('MQTT'), 4, 0x26, 0, 60, ...str('pc' + id), ...will];
+          s.send(pkt(0x10, body));
+        };
+        s.onmessage = ev => {
+          buf = concat(buf, new Uint8Array(ev.data));
+          for (let p; (p = parse(buf));) {
+            buf = buf.slice(p.total);
+            if (p.type === 2 && !done) { if (p.body[1] === 0) { done = true; clearTimeout(to); ws = s; resolve(); } else fail(new Error('refused')); }
+            else if (p.type === 3) onPublish(p);
+          }
+        };
+        s.onerror = () => fail(new Error('ws'));
+        s.onclose = () => {
+          if (!done) return fail(new Error('closed'));
+          if (ws === s && !closed) { ws = null; connH.forEach(h => h(false)); reconnect(); }
+        };
+      });
+    }
+    async function open() {
+      let last;
+      for (const url of brokers) { try { await tryOpen(url); return; } catch (e) { last = e; } }
+      throw last || new Error('no broker');
+    }
+    function afterConnect() {
+      send(pkt(0x82, [0, 1, ...str(base + '+'), 0]));                    // подписка на всех участников комнаты
+      publishMine(); connH.forEach(h => h(true));
+    }
+    async function reconnect() {
+      while (!closed) {
+        await new Promise(r => setTimeout(r, 3000));
+        if (closed) return;
+        try { await open(); afterConnect(); return; } catch (e) {}
+      }
+    }
+    await open(); afterConnect();
+    timers.push(setInterval(() => send(new Uint8Array([0xC0, 0])), 20000));      // keep-alive
+    timers.push(setInterval(publishMine, HEARTBEAT_MS));                          // «я здесь»
+    const onHide = () => clearMine(); window.addEventListener('pagehide', onHide);
+
+    return {
+      presence: async patch => { mine = { ...mine, ...patch }; publishMine(); emit(); },
+      peers: () => {
+        const now = Date.now(), out = [{ isMe: true, sameTab: true, presence: mine }];
+        map.forEach((v, k) => { if (k !== id && now - (v.t || 0) < STALE_MS) out.push({ isMe: false, sameTab: false, presence: v }); });
+        return out;
+      },
+      onPeers: h => { handlers.push(h); return () => { handlers = handlers.filter(x => x !== h); }; },
+      leave: async () => {
+        closed = true; timers.forEach(clearInterval); window.removeEventListener('pagehide', onHide);
+        clearMine(); send(new Uint8Array([0xE0, 0]));
+        const s = ws; ws = null; setTimeout(() => { try { s && s.close(); } catch (e) {} }, 200);
+      }
+    };
+  }
+  window.PCMqtt = { available, join, onConnection: h => { connH.push(h); return () => connH.splice(connH.indexOf(h), 1); } };
+})();
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const DEF={work:25,short:5,long:15,cycles:4,graceSec:30};
+let S={...DEF,...LS.get('pc-settings',{})};
+const D=()=>({work:S.work*60,short:S.short*60,long:S.long*60});
+const day=new Date().toISOString().slice(0,10);
+let st=LS.get('pc-stats',null);if(!st||st.d!==day)st={d:day,sec:0,done:0,pen:0};
+let tasks=LS.get('pc-tasks',[]),cur=LS.get('pc-cur',null),nick=LS.get('pc-nick','');
+let phase='work',remaining=D().work,endTs=0,running=false,loop=null,graceT=null,last=0,askCb=null;
+const LABEL={work:'ФОКУС',short:'КОРОТКИЙ ОТДЫХ',long:'ДЛИННЫЙ ОТДЫХ'};
+const CIRC=2*Math.PI*108;
+const save=()=>LS.set('pc-stats',st);
+const saveT=()=>{LS.set('pc-tasks',tasks);LS.set('pc-cur',cur)};
+const left=()=>running?Math.max(0,Math.ceil((endTs-Date.now())/1000)):remaining;
+const fmt=s=>String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+const myState=()=>running?phase:(remaining<D()[phase]?'paused':'idle');
+
+/* ---------- звук (один AudioContext на всю сессию) ---------- */
+let ac=null;
+function chime(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();
+  [660,880].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+i*.22;o.frequency.value=f;o.connect(g);g.connect(ac.destination);
+  g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);o.start(t);o.stop(t+.5)})}catch(e){}}
+
+/* ---------- таймер (по меткам времени, не копит дрейф в фоновой вкладке) ---------- */
+function paintTime(){const l=left();$('time').textContent=fmt(l);$('fg').style.strokeDashoffset=CIRC*(1-l/D()[phase]);
+  $('stFocus').textContent=Math.floor(st.sec/60);document.title=(running?fmt(l)+' · ':'')+'Pomodoro'}
+function draw(){
+  document.documentElement.dataset.phase=phase;
+  $('phase').textContent=LABEL[phase];$('lock').hidden=!(running&&phase==='work');$('go').textContent=running?'Пауза':'Старт';
+  const n=S.cycles,f=phase==='long'?n:st.done%n,d=$('dots');d.innerHTML='';
+  for(let i=0;i<n;i++)d.appendChild(el('div','dot'+(i<f?' f':'')));
+  $('stDone').textContent=st.done;$('stPen').textContent=st.pen;
+  const t=tasks.find(x=>x.id===cur);$('curtask').textContent=t?'→ '+t.title:'Выберите задачу справа';
+  paintTime();renderRoom();
+}
+const penalize=()=>{st.pen++;save();draw();sync()};
+function start(){if(running)return;running=true;endTs=Date.now()+remaining*1000;last=Date.now();clearTimeout(graceT);loop=setInterval(tick,250);draw();sync()}
+function stop(user){
+  const w=running&&phase==='work';
+  if(running){remaining=left();running=false}
+  clearInterval(loop);clearTimeout(graceT);
+  if(user&&w&&S.graceSec>0)graceT=setTimeout(()=>{if(!running&&phase==='work')penalize()},S.graceSec*1000);
+  save();draw();sync();
+}
+function tick(){const now=Date.now();if(phase==='work')st.sec+=(now-last)/1000;last=now;if(left()<=0)finish();else paintTime()}
+function next(counted){
+  if(phase==='work'){
+    if(counted){st.done++;const t=tasks.find(x=>x.id===cur);if(t){t.n++;saveT()}}
+    phase=(counted&&st.done%S.cycles===0)?'long':'short';
+  }else phase='work';
+  remaining=D()[phase];save();
+}
+function finish(){$('askOv').classList.remove('open');stop(false);chime();next(true);draw();sync()}
+function ask(msg,yes,cb){$('askMsg').textContent=msg;$('askYes').textContent=yes;askCb=cb;$('askOv').classList.add('open')}
+const unfinished=()=>phase==='work'&&left()<D().work;
+$('go').onclick=()=>running?stop(true):start();
+$('reset').onclick=()=>{const go=()=>{if(unfinished())st.pen++;stop(false);remaining=D()[phase];draw();sync()};
+  unfinished()?ask('Рабочая сессия не завершена. Сбросить и получить штраф?','Сбросить',go):go()};
+$('skip').onclick=()=>{const go=()=>{const u=unfinished();if(u)st.pen++;stop(false);next(false);draw();sync()};
+  unfinished()?ask('Пропуск незавершённой сессии: цикл не засчитается, будет штраф.','Пропустить',go):go()};
+$('askYes').onclick=()=>{$('askOv').classList.remove('open');const f=askCb;askCb=null;f&&f()};
+$('askNo').onclick=()=>$('askOv').classList.remove('open');
+window.addEventListener('beforeunload',e=>{if(running&&phase==='work'){e.preventDefault();e.returnValue=''}});
+window.addEventListener('pagehide',save);
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/^(INPUT|TEXTAREA|BUTTON)$/.test(e.target.tagName)){e.preventDefault();running?stop(true):start()}});
+
+/* ---------- настройки (localStorage) ---------- */
+$('gear').onclick=()=>{$('sWork').value=S.work;$('sShort').value=S.short;$('sLong').value=S.long;$('sCycles').value=S.cycles;$('sGrace').value=S.graceSec;$('setOv').classList.add('open')};
+$('setClose').onclick=()=>$('setOv').classList.remove('open');
+$('setOv').onclick=e=>{if(e.target===$('setOv'))$('setOv').classList.remove('open')};
+$('sSave').onclick=()=>{
+  const c=(v,a,b,d)=>{const n=parseInt(v,10);return isNaN(n)?d:Math.min(b,Math.max(a,n))};
+  S={work:c($('sWork').value,1,90,DEF.work),short:c($('sShort').value,1,60,DEF.short),long:c($('sLong').value,1,90,DEF.long),cycles:c($('sCycles').value,1,12,DEF.cycles),graceSec:c($('sGrace').value,0,300,DEF.graceSec)};
+  LS.set('pc-settings',S);if(!running)remaining=D()[phase];$('setOv').classList.remove('open');draw();
+};
+
+/* ---------- задачи ---------- */
+function renderTasks(){
+  const l=$('taskList');l.innerHTML='';
+  if(!tasks.length){l.appendChild(el('div','mu small','Пока пусто — добавьте первую задачу'));return}
+  tasks.forEach(t=>{
+    const r=el('div','task'+(t.id===cur?' on':'')+(t.done?' done':''));
+    const cb=el('input');cb.type='checkbox';cb.checked=!!t.done;cb.onclick=e=>{e.stopPropagation();t.done=cb.checked;saveT();renderTasks()};
+    const x=el('button',null,'×');x.setAttribute('aria-label','Удалить');x.onclick=e=>{e.stopPropagation();tasks=tasks.filter(z=>z.id!==t.id);if(cur===t.id)cur=null;saveT();renderTasks();draw();sync()};
+    r.append(cb,el('span','tt',t.title),el('span','mu small','🍅'+t.n),x);
+    r.onclick=()=>{cur=t.id;saveT();renderTasks();draw();sync()};
+    l.appendChild(r);
+  });
+}
+function addTask(){const v=$('taskIn').value.trim();if(!v)return;const t={id:Date.now(),title:v,done:false,n:0};tasks.push(t);if(!cur)cur=t.id;$('taskIn').value='';saveT();renderTasks();draw();sync()}
+$('taskAdd').onclick=addTask;$('taskIn').onkeydown=e=>{if(e.key==='Enter')addTask()};
+
+/* ---------- командные комнаты (capability room: все, кто открыл страницу, видят друг друга) ---------- */
+let room=null,rm=null,rcode='',unsubs=[],demoOn=false;const demoT0=Date.now();
+const mePres=()=>{const t=tasks.find(x=>x.id===cur);return{nick:nick||'Вы',st:myState(),endsAt:running?endTs:0,done:st.done,pen:st.pen,ft:Math.floor(st.sec/60),task:t?t.title:''}};
+function sync(){if(rm)rm.presence(mePres()).catch(()=>{})}
+const DEMO=()=>[{nick:'Иванов И.',st:'work',endsAt:demoT0+22*60e3,done:3,pen:0,ft:75,task:'Курсовая: введение'},
+  {nick:'Петрова А.',st:'short',endsAt:demoT0+8*60e3,done:2,pen:1,ft:50,task:'Лабораторная №4'},
+  {nick:'Сидоров Д.',st:'paused',endsAt:0,done:1,pen:2,ft:25,task:''}];
+const hue=s=>[...s].reduce((a,c)=>(a*31+c.charCodeAt(0))|0,7)%360;
+function chipOf(p){const s=p.st;if(s==='work'||s==='short'||s==='long'){const l=Math.max(0,Math.ceil((p.endsAt-Date.now())/1000));return[(s==='work'?'фокус ':'отдых ')+fmt(l),s]}
+  return s==='paused'?['пауза','paused']:['готов','idle']}
+function renderRoom(){
+  const joined=!!rm,view=joined||demoOn;
+  $('roomJoin').hidden=view;$('roomView').hidden=!view;$('codeTag').hidden=!joined;
+  if(joined)$('codeTag').textContent=rcode.toUpperCase();
+  if(!view)return;
+  $('roomHint').textContent=joined?'Передайте ссылку или код коллегам':'Демо: участники вымышленные';
+  const list=joined?rm.peers().filter(p=>!(p.isMe&&!p.sameTab)).map(p=>p.isMe?{...mePres(),me:true}:{...p.presence,me:false}):[{...mePres(),me:true},...DEMO()];
+  const m=$('members');m.innerHTML='';let done=0,pen=0,live=0;
+  list.forEach(p=>{
+    const name=String(p.nick||'Участник').slice(0,20),d=+p.done||0,pn=+p.pen||0;done+=d;pen+=pn;
+    if(['work'].includes(p.st))live++;
+    const [ct,cc]=chipOf(p),r=el('div','mem'),av=el('div','av',name[0].toUpperCase());av.style.background=`hsl(${hue(name)} 50% 45%)`;
+    const mid=el('div'),mn=el('div','mn',name);if(p.me)mn.appendChild(el('i',null,' · вы'));
+    mid.append(mn,el('div','ms',`🍅${d} · ${+p.ft||0} мин · штрафов ${pn}`+(p.task?' · '+String(p.task).slice(0,40):'')));
+    r.append(av,mid,el('span','chip '+cc,ct));m.appendChild(r);
+  });
+  const s=$('roomSum');s.innerHTML='';
+  [['участников',list.length],['в фокусе',live],['циклов',done],['штрафов',pen]].forEach(([k,v])=>{const sp=el('span',null,k+' ');sp.appendChild(el('b',null,v));s.appendChild(sp)});
+}
+async function joinRoom(code){
+  code=String(code).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,12);if(!code)return;
+  if(!room){$('roomNote').hidden=false;return}
+  nick=($('nick').value.trim()||nick||'Участник').slice(0,20);LS.set('pc-nick',nick);
+  try{rm=await room.join('pc-'+code)}catch(e){$('roomNote').textContent='Не удалось подключиться к серверу комнат. Проверьте интернет и попробуйте ещё раз.';$('roomNote').hidden=false;return}
+  rcode=code;LS.set('pc-room',code);demoOn=false;$('roomNote').hidden=true;
+  try{history.replaceState(null,'','#r='+code)}catch(e){}toast('Вы в комнате '+code.toUpperCase());
+  unsubs=[rm.onPeers(renderRoom,()=>{})];sync();renderRoom();
+}
+const newCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(5)),b=>'abcdefghjkmnpqrstuvwxyz23456789'[b%31]).join('');
+$('joinBtn').onclick=()=>joinRoom($('code').value);
+$('createBtn').onclick=()=>joinRoom(newCode());
+$('code').onkeydown=e=>{if(e.key==='Enter')joinRoom($('code').value)};
+$('demoBtn').onclick=()=>{demoOn=true;renderRoom()};
+$('leave').onclick=()=>{try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}unsubs.forEach(u=>u());unsubs=[];if(rm)rm.leave();rm=null;rcode='';demoOn=false;LS.set('pc-room','');renderRoom()};
+setInterval(()=>{if(rm||demoOn)renderRoom()},1000);
+$('nick').value=nick;
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),3500)}
+$('copyLink').onclick=async()=>{if(!rcode){toast('Демо-комната: ссылки нет');return}
+  const base=location.protocol==='file:'?location.href.split('#')[0]:location.origin+location.pathname,url=base+'#r='+rcode;
+  try{await navigator.clipboard.writeText(url);toast('Ссылка-приглашение скопирована')}catch(e){$('roomHint').textContent=url}};
+if(window.PC_CONFIG&&PC_CONFIG.adsEnabled)$('adSlot').hidden=false;
+async function getRoomApi(){
+  if(window.claude&&claude.use){try{const r=await claude.use('room');if(r)return r}catch(e){}}
+  if(window.PCSupabase&&PCSupabase.available())return PCSupabase;
+  if(window.PCMqtt&&PCMqtt.available())return PCMqtt;
+  return null;
+}
+getRoomApi().then(r=>{room=r;if(!r){$('roomNote').hidden=false;return}
+  if(r.onConnection)r.onConnection(c=>{$('conn').textContent=c?'● комнаты онлайн':'○ нет связи'},()=>{});
+  else $('conn').textContent='● комнаты онлайн';
+  const m=/^#r=([a-z0-9]{3,12})$/i.exec(location.hash);
+  if(m){const c=m[1].toLowerCase();$('code').value=c;if(nick)joinRoom(c);else{toast('Вас пригласили в комнату '+c.toUpperCase()+' — введите имя и нажмите «Войти»');$('nick').focus()}}
+  else{const c=LS.get('pc-room','');if(c&&nick)joinRoom(c)}}).catch(()=>{$('roomNote').hidden=false});
+
+renderTasks();draw();
+</script>
+</body>
+</html>
