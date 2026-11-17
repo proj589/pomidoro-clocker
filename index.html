@@ -97,7 +97,7 @@ html.zen body{align-items:center}html.zen .ring{width:min(420px,62vh)}html.zen .
 </style>
 </head>
 <body>
-<header class="top"><span>🍅 Pomodoro Clocker</span><nav class="nav"><span class="mu small" id="conn"></span><a href="#how">Как это работает</a><a href="about.html">О Pomodoro</a><a href="#about">О проекте</a></nav></header>
+<header class="top"><span>🍅 Pomodoro Clocker</span><nav class="nav"><span class="mu small" id="conn"></span><a href="#how">Как это работает</a><a href="about.html">О Pomodoro</a><a href="#about">О сервисе</a></nav></header>
 <main class="layout">
   <section class="card timer">
     <div class="row between"><div class="phase"><span id="phase">ФОКУС</span> <span id="lock" hidden>🔒</span></div><span class="row" style="width:auto;gap:2px"><button class="ico" id="zen" title="Режим фокуса (клавиша F)" aria-label="Режим фокуса">⛶</button><button class="ico" id="gear" aria-label="Настройки">⚙</button></span></div>
@@ -116,7 +116,7 @@ html.zen body{align-items:center}html.zen .ring{width:min(420px,62vh)}html.zen .
         <input type="text" id="nick" maxlength="20" placeholder="Ваше имя">
         <div class="row"><input type="text" id="code" maxlength="12" placeholder="Код комнаты"><button id="joinBtn">Войти</button></div>
         <button id="createBtn" class="pri wide">Создать комнату</button>
-        <button id="demoBtn" class="link">Показать демо-участников</button>
+        <button id="demoBtn" class="link">Посмотреть пример комнаты</button>
       </div>
       <div id="roomView" hidden style="display:flex;flex-direction:column;gap:6px">
         <div class="sum" id="roomSum"></div>
@@ -154,7 +154,7 @@ html.zen body{align-items:center}html.zen .ring{width:min(420px,62vh)}html.zen .
 
 <aside class="ad" data-slot="top" hidden aria-label="Реклама"></aside>
 <section class="info" id="how"><div><span class="step">01</span><h3>Создайте комнату</h3><p>Введите имя и нажмите «Создать комнату» — появится короткий код.</p></div><div><span class="step">02</span><h3>Отправьте ссылку</h3><p>Кнопка «Ссылка» копирует приглашение. Коллега открывает её и сразу попадает в вашу комнату.</p></div><div><span class="step">03</span><h3>Работайте вместе</h3><p>Все видят, кто в фокусе, кто на отдыхе, сколько циклов сделано и сколько штрафов за паузы.</p></div></section>
-<footer id="about"><b>Pomodoro Clocker</b> — учебный командный проект. Мы не собираем персональные данные: настройки, задачи и статистика хранятся только в вашем браузере. В комнате другие участники видят ваше имя, статус таймера, число циклов и текущую задачу — не пишите в них ничего личного. Код комнаты знает каждый, кому вы его передали. Комнаты работают через публичный сервер сообщений, его доступность не гарантируется.<br><a href="about.html">О технике Pomodoro</a><a href="privacy.html">Политика конфиденциальности</a><a href="#" id="cookieSet" hidden>Настройки cookie</a><a id="donate" hidden target="_blank" rel="noopener">Поддержать проект</a></footer>
+<footer id="about"><b>Pomodoro Clocker</b> — бесплатный таймер Pomodoro для работы и учёбы в одиночку и командой. Мы не собираем персональные данные: настройки, задачи и статистика хранятся только в вашем браузере. В комнате другие участники видят ваше имя, статус таймера, число циклов и текущую задачу — не пишите в них ничего личного. Код комнаты знает каждый, кому вы его передали. Комнаты работают через сторонний сервер сообщений: при проблемах со связью они могут быть временно недоступны, а таймер продолжит работать.<br><a href="about.html">О технике Pomodoro</a><a href="privacy.html">Политика конфиденциальности</a><a href="#" id="cookieSet" hidden>Настройки cookie</a><a id="donate" hidden target="_blank" rel="noopener">Поддержать проект</a></footer>
 <div class="consent" id="consent" hidden role="dialog" aria-label="Согласие на cookie"><p>Сайт показывает рекламу, и рекламные партнёры могут использовать cookie. Подробнее — в <a href="privacy.html">политике конфиденциальности</a>.</p><div class="row" style="width:auto"><button id="consentMin">Только необходимые</button><button id="consentAll" class="pri">Принять</button></div></div>
 <div class="toast" id="toast" role="status"></div>
 <noscript><p style="text-align:center;padding:20px">Для работы таймера нужен включённый JavaScript.</p></noscript>
@@ -475,7 +475,7 @@ function renderRoom(){
   $('roomJoin').hidden=view;$('roomView').hidden=!view;$('codeTag').hidden=!joined;
   if(joined){const ct=$('codeTag'),c=rcode.toUpperCase();if(ct.dataset.c!==c){ct.dataset.c=c;ct.textContent=c}}   // обновляем только при смене кода — иначе кнопка «мигает» каждую секунду
   if(!view)return;
-  $('roomHint').textContent=joined?'Передайте ссылку или код коллегам':'Демо: участники вымышленные';
+  $('roomHint').textContent=joined?'Передайте ссылку или код коллегам':'Пример комнаты: участники вымышленные';
   const list=joined?rm.peers().filter(p=>!(p.isMe&&!p.sameTab)).map(p=>p.isMe?{...mePres(),me:true}:{...p.presence,me:false}):[{...mePres(),me:true},...DEMO()];
   const m=$('members');
   const sig=JSON.stringify([S.goal,list.map(p=>[p.nick,p.st,p.done,p.pen,p.ft,p.task,!!p.me])]);
