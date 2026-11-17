@@ -6,6 +6,7 @@
 <title>Pomodoro Clocker</title>
 <meta name="description" content="Командный Pomodoro-таймер с комнатами фокуса">
 <meta name="theme-color" content="#12161d">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Pomodoro Clocker","applicationCategory":"ProductivityApplication","operatingSystem":"Any","inLanguage":"ru","description":"Командный Pomodoro-таймер с комнатами фокуса, задачами и статистикой","offers":{"@type":"Offer","price":"0","priceCurrency":"RUB"}}</script>
 <meta property="og:title" content="Pomodoro Clocker — таймер фокуса для команды">
 <meta property="og:description" content="Работайте циклами 25/5/15 вместе: создайте комнату, отправьте ссылку и видьте, кто в фокусе.">
 <meta property="og:type" content="website">
@@ -88,18 +89,23 @@ footer a{color:var(--mu);margin-right:14px}
 .wd{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px}
 .wb{width:100%;background:var(--ac);border-radius:6px 6px 3px 3px;min-height:2px;opacity:.9;transition:height .3s}
 .wv{font:600 10px 'IBM Plex Mono',monospace;color:var(--mu);min-height:12px}.wl{font-size:11px;color:var(--mu)}
+
+.goal{height:6px;border-radius:99px;background:var(--ln);overflow:hidden;margin-top:6px}.goal i{display:block;height:100%;width:0;background:var(--ac);border-radius:99px;transition:width .4s}
+html.zen .top,html.zen .col,html.zen .info,html.zen footer,html.zen .ad,html.zen .stats{display:none!important}
+html.zen .layout{grid-template-columns:minmax(0,520px);justify-content:center}
+html.zen body{align-items:center}html.zen .ring{width:min(420px,62vh)}html.zen .time{font-size:68px}
 </style>
 </head>
 <body>
-<header class="top"><span>🍅 Pomodoro Clocker</span><nav class="nav"><span class="mu small" id="conn"></span><a href="#how">Как это работает</a><a href="#about">О проекте</a></nav></header>
+<header class="top"><span>🍅 Pomodoro Clocker</span><nav class="nav"><span class="mu small" id="conn"></span><a href="#how">Как это работает</a><a href="about.html">О Pomodoro</a><a href="#about">О проекте</a></nav></header>
 <main class="layout">
   <section class="card timer">
-    <div class="row between"><div class="phase"><span id="phase">ФОКУС</span> <span id="lock" hidden>🔒</span></div><button class="ico" id="gear" aria-label="Настройки">⚙</button></div>
+    <div class="row between"><div class="phase"><span id="phase">ФОКУС</span> <span id="lock" hidden>🔒</span></div><span class="row" style="width:auto;gap:2px"><button class="ico" id="zen" title="Режим фокуса (клавиша F)" aria-label="Режим фокуса">⛶</button><button class="ico" id="gear" aria-label="Настройки">⚙</button></span></div>
     <div class="ring"><svg viewBox="0 0 240 240"><circle class="bgc" cx="120" cy="120" r="108"/><circle class="fgc" id="fg" cx="120" cy="120" r="108"/></svg><div class="time" id="time">25:00</div></div>
     <div class="curtask" id="curtask"></div>
     <div class="dots" id="dots"></div>
     <div class="controls"><button id="reset">Сброс</button><button id="go" class="pri">Старт</button><button id="skip">Дальше</button></div>
-    <div class="stats"><div><b id="stFocus">0</b><span>мин фокуса</span></div><div><b id="stDone">0</b><span>циклов</span></div><div><b id="stPen">0</b><span>штрафов</span></div></div>
+    <div class="stats"><div><b id="stFocus">0</b><span>мин фокуса</span></div><div><b id="stDone">0</b><span>циклов / цель</span></div><div><b id="stPen">0</b><span>штрафов</span></div></div>
     <div class="mu small">Пробел — старт / пауза</div>
   </section>
   <div class="col">
@@ -114,6 +120,7 @@ footer a{color:var(--mu);margin-right:14px}
       </div>
       <div id="roomView" hidden style="display:flex;flex-direction:column;gap:6px">
         <div class="sum" id="roomSum"></div>
+        <div class="goal" aria-hidden="true"><i id="goalBar"></i></div><div class="mu small" id="goalTxt"></div>
         <div id="members"></div>
         <div class="row between"><span class="mu small" id="roomHint">Передайте ссылку или код коллегам</span><div class="row" style="width:auto"><button id="copyLink">Ссылка</button><button id="leave">Выйти</button></div></div>
       </div>
@@ -135,6 +142,7 @@ footer a{color:var(--mu);margin-right:14px}
   <div class="srow"><span>Длинный отдых, мин</span><input type="number" id="sLong" min="1" max="90"></div>
   <div class="srow"><span>Циклов до длинного</span><input type="number" id="sCycles" min="1" max="12"></div>
   <div class="srow"><span>Грейс паузы, сек (0 — выкл.)</span><input type="number" id="sGrace" min="0" max="300"></div>
+  <div class="srow"><span>Цель на день, циклов</span><input type="number" id="sGoal" min="1" max="20"></div>
   <label class="srow"><span>Звук в конце фазы</span><input type="checkbox" id="sSound"></label>
   <label class="srow"><span>Уведомление, если вкладка скрыта</span><input type="checkbox" id="sNotify"></label>
   <button class="pri" id="sSave">Сохранить</button>
@@ -146,7 +154,7 @@ footer a{color:var(--mu);margin-right:14px}
 
 <aside class="ad" data-slot="top" hidden aria-label="Реклама"></aside>
 <section class="info" id="how"><div><span class="step">01</span><h3>Создайте комнату</h3><p>Введите имя и нажмите «Создать комнату» — появится короткий код.</p></div><div><span class="step">02</span><h3>Отправьте ссылку</h3><p>Кнопка «Ссылка» копирует приглашение. Коллега открывает её и сразу попадает в вашу комнату.</p></div><div><span class="step">03</span><h3>Работайте вместе</h3><p>Все видят, кто в фокусе, кто на отдыхе, сколько циклов сделано и сколько штрафов за паузы.</p></div></section>
-<footer id="about"><b>Pomodoro Clocker</b> — учебный командный проект. Мы не собираем персональные данные: настройки, задачи и статистика хранятся только в вашем браузере. В комнате другие участники видят ваше имя, статус таймера, число циклов и текущую задачу — не пишите в них ничего личного. Код комнаты знает каждый, кому вы его передали. Комнаты работают через публичный сервер сообщений, его доступность не гарантируется.<br><a href="privacy.html">Политика конфиденциальности</a><a href="#" id="cookieSet" hidden>Настройки cookie</a><a id="donate" hidden target="_blank" rel="noopener">Поддержать проект</a></footer>
+<footer id="about"><b>Pomodoro Clocker</b> — учебный командный проект. Мы не собираем персональные данные: настройки, задачи и статистика хранятся только в вашем браузере. В комнате другие участники видят ваше имя, статус таймера, число циклов и текущую задачу — не пишите в них ничего личного. Код комнаты знает каждый, кому вы его передали. Комнаты работают через публичный сервер сообщений, его доступность не гарантируется.<br><a href="about.html">О технике Pomodoro</a><a href="privacy.html">Политика конфиденциальности</a><a href="#" id="cookieSet" hidden>Настройки cookie</a><a id="donate" hidden target="_blank" rel="noopener">Поддержать проект</a></footer>
 <div class="consent" id="consent" hidden role="dialog" aria-label="Согласие на cookie"><p>Сайт показывает рекламу, и рекламные партнёры могут использовать cookie. Подробнее — в <a href="privacy.html">политике конфиденциальности</a>.</p><div class="row" style="width:auto"><button id="consentMin">Только необходимые</button><button id="consentAll" class="pri">Принять</button></div></div>
 <div class="toast" id="toast" role="status"></div>
 <noscript><p style="text-align:center;padding:20px">Для работы таймера нужен включённый JavaScript.</p></noscript>
@@ -355,7 +363,7 @@ window.PC_CONFIG = {
 const $=id=>document.getElementById(id);
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
-const DEF={work:25,short:5,long:15,cycles:4,graceSec:30,sound:true,notify:false};
+const DEF={work:25,short:5,long:15,cycles:4,graceSec:30,sound:true,notify:false,goal:8};
 let S={...DEF,...LS.get('pc-settings',{})};
 const D=()=>({work:S.work*60,short:S.short*60,long:S.long*60});
 // ВАЖНО: день считаем по МЕСТНОМУ времени (toISOString даёт UTC и сбрасывал статистику не в полночь)
@@ -382,15 +390,15 @@ function chime(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)(
 
 /* ---------- таймер (по меткам времени, не копит дрейф в фоновой вкладке) ---------- */
 function paintTime(){const l=left();$('time').textContent=fmt(l);$('fg').style.strokeDashoffset=CIRC*(1-l/D()[phase]);
-  $('stFocus').textContent=Math.floor(st.sec/60);document.title=(running?fmt(l)+' · ':'')+'Pomodoro'}
+  $('stFocus').textContent=Math.floor(st.sec/60);document.title=(running?fmt(l)+' · ':'')+'Pomodoro';paintFav(l)}
 function draw(){
   document.documentElement.dataset.phase=phase;
   $('phase').textContent=LABEL[phase];$('lock').hidden=!(running&&phase==='work');$('go').textContent=running?'Пауза':'Старт';
   const n=S.cycles,f=phase==='long'?n:st.done%n,d=$('dots');d.innerHTML='';
   for(let i=0;i<n;i++)d.appendChild(el('div','dot'+(i<f?' f':'')));
-  $('stDone').textContent=st.done;$('stPen').textContent=st.pen;
+  $('stDone').textContent=st.done+'/'+(S.goal||8);setWake(running);$('stPen').textContent=st.pen;
   document.documentElement.classList.toggle('focusing',running&&phase==='work');renderWeek();
-  const t=tasks.find(x=>x.id===cur);$('curtask').textContent=t?'→ '+t.title:'Выберите задачу справа';
+  const t=tasks.find(x=>x.id===cur);$('curtask').textContent=t?'→ '+t.title:'Задача не выбрана';
   paintTime();renderRoom();
 }
 const penalize=()=>{st.pen++;save();draw();sync()};
@@ -406,7 +414,7 @@ function tick(){const now=Date.now();if(st.d!==ld()){save();st={d:ld(),sec:0,don
   if(phase==='work')st.sec+=(now-last)/1000;last=now;if(left()<=0)finish();else paintTime()}
 function next(counted){
   if(phase==='work'){
-    if(counted){st.done++;const t=tasks.find(x=>x.id===cur);if(t){t.n++;saveT()}}
+    if(counted){st.done++;if(st.done===(S.goal||8))toast('🎉 Цель на день выполнена: '+st.done+' циклов!');const t=tasks.find(x=>x.id===cur);if(t){t.n++;saveT()}}
     phase=(counted&&st.done%S.cycles===0)?'long':'short';
   }else phase='work';
   remaining=D()[phase];save();
@@ -426,12 +434,12 @@ window.addEventListener('pagehide',save);
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/^(INPUT|TEXTAREA|BUTTON)$/.test(e.target.tagName)){e.preventDefault();running?stop(true):start()}});
 
 /* ---------- настройки (localStorage) ---------- */
-$('gear').onclick=()=>{$('sWork').value=S.work;$('sShort').value=S.short;$('sLong').value=S.long;$('sCycles').value=S.cycles;$('sGrace').value=S.graceSec;$('sSound').checked=S.sound!==false;$('sNotify').checked=!!S.notify;$('setOv').classList.add('open')};
+$('gear').onclick=()=>{$('sWork').value=S.work;$('sShort').value=S.short;$('sLong').value=S.long;$('sCycles').value=S.cycles;$('sGrace').value=S.graceSec;$('sGoal').value=S.goal||8;$('sSound').checked=S.sound!==false;$('sNotify').checked=!!S.notify;$('setOv').classList.add('open')};
 $('setClose').onclick=()=>$('setOv').classList.remove('open');
 $('setOv').onclick=e=>{if(e.target===$('setOv'))$('setOv').classList.remove('open')};
 $('sSave').onclick=()=>{
   const c=(v,a,b,d)=>{const n=parseInt(v,10);return isNaN(n)?d:Math.min(b,Math.max(a,n))};
-  S={work:c($('sWork').value,1,90,DEF.work),short:c($('sShort').value,1,60,DEF.short),long:c($('sLong').value,1,90,DEF.long),cycles:c($('sCycles').value,1,12,DEF.cycles),graceSec:c($('sGrace').value,0,300,DEF.graceSec),sound:$('sSound').checked,notify:$('sNotify').checked&&('Notification' in window)};
+  S={work:c($('sWork').value,1,90,DEF.work),short:c($('sShort').value,1,60,DEF.short),long:c($('sLong').value,1,90,DEF.long),cycles:c($('sCycles').value,1,12,DEF.cycles),graceSec:c($('sGrace').value,0,300,DEF.graceSec),goal:c($('sGoal').value,1,20,DEF.goal),sound:$('sSound').checked,notify:$('sNotify').checked&&('Notification' in window)};
   if(S.notify&&Notification.permission==='default')Notification.requestPermission();
   LS.set('pc-settings',S);if(!running)remaining=D()[phase];$('setOv').classList.remove('open');draw();
 };
@@ -470,19 +478,20 @@ function renderRoom(){
   $('roomHint').textContent=joined?'Передайте ссылку или код коллегам':'Демо: участники вымышленные';
   const list=joined?rm.peers().filter(p=>!(p.isMe&&!p.sameTab)).map(p=>p.isMe?{...mePres(),me:true}:{...p.presence,me:false}):[{...mePres(),me:true},...DEMO()];
   const m=$('members');
-  const sig=JSON.stringify(list.map(p=>[p.nick,p.st,p.done,p.pen,p.ft,p.task,!!p.me]));
+  const sig=JSON.stringify([S.goal,list.map(p=>[p.nick,p.st,p.done,p.pen,p.ft,p.task,!!p.me])]);
   if(sig===renderRoom.sig&&m.children.length===list.length){list.forEach((p,i)=>{const c=m.children[i].querySelector('.chip'),t=chipOf(p)[0];if(c&&c.textContent!==t)c.textContent=t});return}
-  renderRoom.sig=sig;m.innerHTML='';let done=0,pen=0,live=0;
+  renderRoom.sig=sig;m.innerHTML='';let done=0,pen=0,live=0;const maxDone=Math.max(0,...list.map(p=>+p.done||0));
   list.forEach(p=>{
     const name=String(p.nick||'Участник').slice(0,20),d=+p.done||0,pn=+p.pen||0;done+=d;pen+=pn;
     if(['work'].includes(p.st))live++;
     const [ct,cc]=chipOf(p),r=el('div','mem'),av=el('div','av',name[0].toUpperCase());av.style.background=`hsl(${hue(name)} 50% 45%)`;
-    const mid=el('div'),mn=el('div','mn',name);if(p.me)mn.appendChild(el('i',null,' · вы'));
+    const mid=el('div'),mn=el('div','mn',(d===maxDone&&maxDone>0&&list.length>1?'👑 ':'')+name);if(p.me)mn.appendChild(el('i',null,' · вы'));
     mid.append(mn,el('div','ms',`🍅${d} · ${+p.ft||0} мин · штрафов ${pn}`+(p.task?' · '+String(p.task).slice(0,40):'')));
     r.append(av,mid,el('span','chip '+cc,ct));m.appendChild(r);
   });
   const s=$('roomSum');s.innerHTML='';
   [['участников',list.length],['в фокусе',live],['циклов',done],['штрафов',pen]].forEach(([k,v])=>{const sp=el('span',null,k+' ');sp.appendChild(el('b',null,v));s.appendChild(sp)});
+  const tgt=list.length*(S.goal||8);$('goalBar').style.width=Math.min(100,Math.round(done/tgt*100))+'%';$('goalTxt').textContent='Командная цель на день: '+done+' / '+tgt+' циклов';
 }
 async function joinRoom(code){
   code=String(code).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,12);if(!code)return;
@@ -520,6 +529,34 @@ function renderWeek(){
 window.addEventListener('storage',e=>{if(e.key==='pc-stats'&&e.newValue){try{const n=JSON.parse(e.newValue);if(n.d===st.d&&!running){st=n;draw()}}catch(x){}}});
 window.addEventListener('offline',()=>toast('Нет интернета: таймер работает, комнаты временно недоступны'));
 window.addEventListener('online',()=>toast('Связь восстановлена'));
+
+/* ---------- режим глубокого фокуса: полный экран, экран не гаснет, иконка вкладки показывает прогресс ---------- */
+function toggleZen(on){
+  const h=document.documentElement,v=on===undefined?!h.classList.contains('zen'):on;
+  h.classList.toggle('zen',v);$('zen').textContent=v?'✕':'⛶';
+  try{if(v&&h.requestFullscreen)h.requestFullscreen().catch(()=>{});else if(!v&&document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch(e){}
+}
+$('zen').onclick=()=>toggleZen();
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&document.documentElement.classList.contains('zen'))toggleZen(false)});
+document.addEventListener('keydown',e=>{if(/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;
+  if(e.code==='KeyF')toggleZen();else if(e.code==='Escape'&&document.documentElement.classList.contains('zen'))toggleZen(false)});
+let wl=null,wlBusy=false;
+async function setWake(on){
+  try{
+    if(on&&!wl&&!wlBusy&&'wakeLock' in navigator){wlBusy=true;try{wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}finally{wlBusy=false}}
+    else if(!on&&wl){const x=wl;wl=null;await x.release()}
+  }catch(e){wl=null}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&running)setWake(true)});
+let favKey='';const favEl=document.querySelector('link[rel="icon"]');
+function paintFav(l){
+  if(!favEl)return;const tot=D()[phase],key=phase+'|'+running+'|'+Math.round(l/tot*24);if(key===favKey)return;favKey=key;
+  try{const c=document.createElement('canvas');c.width=c.height=64;const g=c.getContext('2d');
+    const ac=(getComputedStyle(document.documentElement).getPropertyValue('--ac')||'').trim()||'#f2a93b';
+    g.lineWidth=9;g.lineCap='round';g.strokeStyle='rgba(128,128,128,.35)';g.beginPath();g.arc(32,32,24,0,7);g.stroke();
+    g.strokeStyle=ac;g.beginPath();g.arc(32,32,24,-Math.PI/2,-Math.PI/2+Math.PI*2*Math.max(0.001,l/tot));g.stroke();
+    favEl.type='image/png';favEl.href=c.toDataURL('image/png')}catch(e){}
+}
 async function getRoomApi(){
   if(window.claude&&claude.use){try{const r=await claude.use('room');if(r)return r}catch(e){}}
   if(window.PCSupabase&&PCSupabase.available())return PCSupabase;
